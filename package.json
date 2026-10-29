@@ -1,44 +1,19 @@
 {
-  "name": "lavora-workflow",
+  "name": "lavora-firebase-html",
   "private": true,
-  "version": "2.0.0",
-  "type": "module",
-  "description": "Lavora Design Çalışma Masası - Modern İş Akışı Yönetim Uygulaması",
+  "version": "1.0.0",
+  "description": "Lavora Design Çalışma Masası - Firebase HTML Entegrasyonu",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
-  },
-  "dependencies": {
-    "@tanstack/react-query": "^5.62.11",
-    "@types/file-saver": "^2.0.7",
-    "browser-image-compression": "^2.0.2",
-    "clsx": "^2.1.1",
-    "exceljs": "^4.4.0",
-    "file-saver": "^2.0.5",
-    "firebase": "^13.1.0",
-    "framer-motion": "^14.7.1",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.1",
-    "lucide-react": "^0.469.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-dropzone": "^20.1.4",
-    "tailwind-merge": "^2.6.1",
-    "xlsx": "^0.18.5",
-    "zustand": "^5.0.2"
+    "test:rules": "firebase --config firebase.emulator.json emulators:exec --only database --project lavora-rules-tests \"node --test database.rules.test.js\"",
+    "emulator": "firebase --config firebase.emulator.json emulators:start --only database",
+    "serve": "firebase serve --only hosting",
+    "deploy": "firebase deploy",
+    "deploy:rules": "firebase deploy --only database",
+    "deploy:hosting": "firebase deploy --only hosting"
   },
   "devDependencies": {
-    "@types/node": "^22.10.2",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.3",
-    "vite": "^6.0.5"
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "firebase-tools": "^15.34.2"
   },
   "repository": {
     "type": "git",
