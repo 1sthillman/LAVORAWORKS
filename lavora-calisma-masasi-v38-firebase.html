@@ -2106,13 +2106,12 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     const local=await getStore('wph',mediaId);if(!local || !(local.img||local.th)) return false;
     const full=await compressImage(local.img||local.th,960,.62,405000);
     const thumb=await compressImage(full.url,180,.5,27000);
-    const paths={};
     const base=`orgs/${state.cfg.orgId}`;
     const metadata={mimeType:'image/jpeg',byteLength:full.byteLength,checksum:full.checksum,createdBy:uid(),createdAt:now(),projectId:String(projectId),visibility:'staff',thumbnailId:String(mediaId),width:full.width,height:full.height};
-    paths[`${base}/mediaMetadata/staff/${projectId}/${mediaId}`]=metadata;
-    paths[`${base}/mediaThumbnails/staff/${projectId}/${mediaId}`]={dataBase64:thumb.base64,byteLength:thumb.byteLength,checksum:thumb.checksum};
-    paths[`${base}/mediaPayloads/staff/${projectId}/${mediaId}`]={dataBase64:full.base64,byteLength:full.byteLength,checksum:full.checksum};
-    await withTimeout(state.db.ref().update(paths),18000,'Görsel yükleme zaman aşımına uğradı');
+    // FIXED: Ayrı transaction'larda yaz (multipath root update yerine)
+    await withTimeout(state.db.ref(`${base}/mediaMetadata/staff/${projectId}/${mediaId}`).set(metadata),8000,'Metadata yazılamadı');
+    await withTimeout(state.db.ref(`${base}/mediaThumbnails/staff/${projectId}/${mediaId}`).set({dataBase64:thumb.base64,byteLength:thumb.byteLength,checksum:thumb.checksum}),10000,'Thumbnail yazılamadı');
+    await withTimeout(state.db.ref(`${base}/mediaPayloads/staff/${projectId}/${mediaId}`).set({dataBase64:full.base64,byteLength:full.byteLength,checksum:full.checksum}),12000,'Görsel payload yazılamadı');
     await metaPut(`${uid()}|media|${projectId}|${mediaId}`,{uid:uid(),uploaded:true,at:now(),projectId,mediaId,checksum:full.checksum});
     return true;
   }
@@ -2222,19 +2221,18 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     const id=String(p.id); if(!id)throw new Error('Proje kimliği boş.');
     const existingIndex=await safeGet(rolePath(`projectIndex/${id}`)).catch(()=>null);
     if(createOnly && existingIndex) return {skipped:true};
-    const upd={};const base=`orgs/${state.cfg.orgId}`;
+    const base=`orgs/${state.cfg.orgId}`;
     if(p.d && existingIndex && !createOnly) {
       // Trash is a reversible tombstone. Keep source data for restore/retention; access rules hide it from staff/customers.
-      upd[`${base}/projectIndex/${id}`]=indexProjection(p);
+      await withTimeout(state.db.ref(`${base}/projectIndex/${id}`).set(indexProjection(p)),8000,'Proje index yazılamadı');
     } else {
-      // First migration, even of an item already in the local trash, must carry its source before applying the tombstone.
+      // FIXED: Her path'i ayrı ayrı yaz (multipath root update yerine)
       await writeMediaReferences(id,p);
-      if(flags.fin) upd[`${base}/projectFinancials/${id}`]=financeProjection(p);
-      if(flags.workflow) upd[`${base}/workflowStaff/${id}`]=workflowProjection(p);
-      if(flags.public) upd[`${base}/projectPublic/${id}`]=publicProjection(p);
-      if(flags.idx || p.d || createOnly) upd[`${base}/projectIndex/${id}`]=indexProjection(p);
+      if(flags.fin) await withTimeout(state.db.ref(`${base}/projectFinancials/${id}`).set(financeProjection(p)),8000,'Finance yazılamadı');
+      if(flags.workflow) await withTimeout(state.db.ref(`${base}/workflowStaff/${id}`).set(workflowProjection(p)),8000,'Workflow yazılamadı');
+      if(flags.public) await withTimeout(state.db.ref(`${base}/projectPublic/${id}`).set(publicProjection(p)),8000,'Public yazılamadı');
+      if(flags.idx || p.d || createOnly) await withTimeout(state.db.ref(`${base}/projectIndex/${id}`).set(indexProjection(p)),8000,'Index yazılamadı');
     }
-    if(Object.keys(upd).length) await withTimeout(state.db.ref().update(upd),18000,'Proje yazması zaman aşımına uğradı');
     return {ok:true};
   }
   function makeQueueProject(p, prevSnap, forceAll=false) {
@@ -2364,8 +2362,13 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
         else if(status==='in_progress'&&Object.keys(stages).length)stages[Object.keys(stages)[0]]=1;
         else if(status==='blocked'&&Object.keys(stages).length)stages[Object.keys(stages)[0]]=3;
         const patch={status:status==='done'?'done':status==='in_progress'?'in_progress':status==='blocked'?'blocked':'todo',note:String(payload.note||'').slice(0,2000),progress:Math.max(0,Math.min(100,Number(payload.progress)||0)),stageProgress:stages,updatedAt:payload.updatedAt,updatedBy:uid()};
-        const multipath={};Object.entries(patch).forEach(([k,v])=>multipath[`${base}/${k}`]=v);multipath[`orgs/${state.cfg.orgId}/projectIndex/${q.projectId}/workflowUpdatedAt`]=payload.updatedAt;
-        await withTimeout(state.db.ref().update(multipath),18000,'İş akışı değişikliği yazılamadı');
+        // FIXED: Transaction ile yaz (multipath yerine)
+        const result=await withTimeout(state.db.ref(base).transaction(current=>{
+          if(!current || (q.baseUpdatedAt!=null && Number(current.updatedAt||0)>Number(q.baseUpdatedAt||0))) return;
+          return {...current,...patch};
+        },undefined,false),18000,'İş akışı transaction zaman aşımına uğradı');
+        if(!result.committed) { const e=new Error('CONFLICT');e.code='LAVORA/CONFLICT';throw e; }
+        await state.db.ref(`orgs/${state.cfg.orgId}/projectIndex/${q.projectId}/workflowUpdatedAt`).set(payload.updatedAt);
         Object.assign(payload,patch);
       } else {
         const result=await withTimeout(state.db.ref(base).transaction(current=>{
@@ -2386,10 +2389,11 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     } else if(q.kind==='customerRequest') {
       const p=q.payload, detailPath=rolePath(`customerIntakes/${uid()}/${q.requestId}`), indexPath=rolePath(`customerIntakeIndex/${q.requestId}`);
       const existing=await safeGet(detailPath).catch(()=>null);
-      if(!existing) await withTimeout(state.db.ref(detailPath).set(p.detail),18000,'Müşteri talebi gönderilemedi');
+      // FIXED: Ayrı transaction'lar (multipath yerine)
+      if(!existing) await withTimeout(state.db.ref(detailPath).set(p.detail),10000,'Müşteri talebi gönderilemedi');
       else if(existing.title!==p.detail.title || Number(existing.createdAt)!==Number(p.detail.createdAt)) { const e=new Error('CONFLICT');e.code='LAVORA/CONFLICT';throw e; }
       const summary=await safeGet(indexPath).catch(()=>null);
-      if(!summary) await withTimeout(state.db.ref(indexPath).set(p.index),18000,'Müşteri talep özeti gönderilemedi');
+      if(!summary) await withTimeout(state.db.ref(indexPath).set(p.index),10000,'Müşteri talep özeti gönderilemedi');
       else if(summary.uid!==uid() || summary.title!==p.index.title) throw new Error('Talep özeti farklı bir kayıtla çakışıyor.');
     }
   }
@@ -2727,8 +2731,10 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     const existing=await safeGet(rolePath(`customerIntakes/${requestUid}/${requestId}`));if(!existing)throw new Error('Talep bulunamadı.');
     const detail={...existing,status,updatedAt:now()};const summary=asObj(state.adminRequests[requestId]);
     const index={...summary,requestId,uid:requestUid,status,updatedAt:now()};
-    const base=`orgs/${state.cfg.orgId}`,updates={};updates[`${base}/customerIntakes/${requestUid}/${requestId}`]=detail;updates[`${base}/customerIntakeIndex/${requestId}`]=index;
-    await withTimeout(state.db.ref().update(updates),12000,'Talep durumu kaydedilemedi.');
+    const base=`orgs/${state.cfg.orgId}`;
+    // FIXED: Her path'i ayrı yaz (multipath root update yerine)
+    await withTimeout(state.db.ref(`${base}/customerIntakes/${requestUid}/${requestId}`).set(detail),12000,'Talep detayı yazılamadı.');
+    await withTimeout(state.db.ref(`${base}/customerIntakeIndex/${requestId}`).set(index),12000,'Talep index yazılamadı.');
     state.adminRequests[requestId]=index;renderAdmin();
   }
   async function createProjectFromRequest(requestId, requestUid) {
@@ -2754,13 +2760,12 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     if(!customerUids.length)return;
     const flow=workflowProjection(p),items=Object.values(flow.items||{});
     const progress=items.length?Math.round(items.reduce((a,x)=>a+Number(x.progress||0),0)/items.length):0;
-    const update={};const base=`orgs/${state.cfg.orgId}`;
+    const base=`orgs/${state.cfg.orgId}`;
+    // FIXED: Her müşteri view'ını ayrı yaz (multipath root update yerine)
     for(const cu of customerUids) {
-      const path=`${base}/customerViews/${cu}/${projectId}`;
       const v={title:String(p.name||'Proje').slice(0,240),description:String(p.description||'').slice(0,4000),customerStatus:projectStatusLabel(p),progress,dueDate:String(p.w?.due||''),updatedAt:now()};
-      Object.entries(v).forEach(([k,val])=>update[`${path}/${k}`]=val);
+      await withTimeout(state.db.ref(`${base}/customerViews/${cu}/${projectId}`).update(v),12000,`Müşteri ${cu} görünümü güncellenemedi.`);
     }
-    if(Object.keys(update).length)await withTimeout(state.db.ref().update(update),12000,'Müşteri proje görünümü güncellenemedi.');
   }
   async function publishStaffUpdate(projectId, itemId, itemPayload) {
     if(!state.connected)return;
@@ -2787,12 +2792,13 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     }
     state.customersByProject=byProject;
     const old=asObj(await safeGet(rolePath('projectCustomerIndex')).catch(()=>({})));
-    const base=`orgs/${state.cfg.orgId}`,upd={};
+    const base=`orgs/${state.cfg.orgId}`;
+    // FIXED: Her project customer index'ini ayrı yaz (multipath root update yerine)
     for(const pid of new Set([...Object.keys(old),...Object.keys(byProject)])) {
       const map={};(byProject[pid]||[]).forEach(id=>map[id]=true);
-      upd[`${base}/projectCustomerIndex/${pid}`]=Object.keys(map).length?map:null;
+      const value=Object.keys(map).length?map:null;
+      await withTimeout(state.db.ref(`${base}/projectCustomerIndex/${pid}`).set(value),12000,`Proje ${pid} müşteri indeksi yazılamadı.`);
     }
-    if(Object.keys(upd).length)await withTimeout(state.db.ref().update(upd),12000,'Müşteri proje indeksleri güncellenemedi.');
     for(const p of state.projects) if(!p.d&&byProject[p.id]?.length) await publishCustomerViewsForProject(p.id,p).catch(()=>{});
   }
   async function recountLegacy() { state.localLegacyCounts=await legacyCounts();return state.localLegacyCounts; }
