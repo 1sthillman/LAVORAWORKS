@@ -362,8 +362,7 @@ if(a=='x')close();
 else if(a=='home'){led=false;LD=null;cur=null;close();render()}
 else if(a=='open'){cur=P.find(p=>p.id==d.id);si=0;fq='';opn.clear();render();scrollTo(0,0)}
 else if(a=='dup'){const p=JSON.parse(JSON.stringify(P.find(p=>p.id==d.id)));p.id=uid();p.name+=' (kopya)';p.u=Date.now();P.push(p);save();plist();toast('Proje kopyalandı')}
-else if(a=='del'){const p=P.find(p=>p.id==d.id);if(p)sure({title:'Çöp kutusuna taşınsın mı?',text:'30 gün içinde geri alabilirsin.',ok:'Çöpe taşı',danger:1}).then(y=>{if(y){p.d=Date.now();p.u=Date.now();save();render();toast('Çöp kutusuna taşındı')}})}
-else if(a=='tab'){si=+d.i;fq='';opn.clear();render()}
+else if(a=='del'){const p=P.find(p=>p.id==d.id);if(p)sure({title:'Çöp kutusuna taşınsın mı?',text:'30 gün içinde geri alabilirsin.',ok:'Çöpe taşı',danger:1}).then(y=>{if(y){p.d=Date.now();p.u=Date.now();save();render();toast('Çöp kutusuna taşındı');if(window.__LAVORA_CLOUD_MODE__&&window.LavoraCloud?.isActive())window.LavoraCloud.queueSave([p]).catch(e=>console.error('Silme Firebase senkronizasyonu:',e))}})}else if(a=='tab'){si=+d.i;fq='';opn.clear();render()}
 else if(a=='view'){view=d.v;render()}
 else if(a=='add'){s.r.push(s.h.map(()=>''));opn.add(s.r.length-1);touch();rows();sum();const c=document.querySelectorAll('.card,.gw tbody tr');c[c.length-1]?.scrollIntoView({block:'center'})}
 else if(a=='delrow'){sure({title:'Satır silinsin mi?',ok:'Sil',danger:1}).then(y=>{if(y){const i=+d.i,rr=s.r[i],hr=!!(s.rn&&s.rn.length==s.r.length),rn=hr?s.rn[i]:null,u=window.lvShift?lvShift(cur,s,i,'del'):null;s.r.splice(i,1);hr&&s.rn.splice(i,1);opn.clear();touch();rows();sum();undoToast('Satır silindi',()=>{s.r.splice(i,0,rr);hr&&s.rn.splice(i,0,rn);u&&u();opn.clear();touch();rows();sum()})}})}
