@@ -1,0 +1,5 @@
+{
+  "database": {
+    "rules": "html/lavora-database-rules.json"
+  }
+}
