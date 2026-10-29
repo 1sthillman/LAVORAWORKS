@@ -2539,9 +2539,26 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     const uid0=uid(); let index={};
     if(!offline && state.connected) index=asObj(await safeGet(rolePath('projectIndex')));
     const cached=await cacheAll(uid0,'project');
-    if(offline || !state.connected) { state.projects=cached.map(x=>clone(x.payload)).filter(p=>p&&p.id);return; }
+    if(offline || !state.connected) { 
+      // Duplicate kontrolü: aynı ID'ye sahip projeleri filtrele
+      const seen = new Set();
+      state.projects = cached
+        .map(x=>clone(x.payload))
+        .filter(p => {
+          if (!p || !p.id) return false;
+          if (seen.has(p.id)) return false; // Duplicate, atla
+          seen.add(p.id);
+          return true;
+        });
+      return; 
+    }
     const cacheById=new Map(cached.map(x=>[String(x.key),x.payload]));const ids=Object.keys(index);const out=[];
+    // Duplicate kontrolü: aynı ID sadece bir kez işlenir
+    const processed = new Set();
     for(const id of ids) {
+      if (processed.has(id)) continue; // Duplicate ID, atla
+      processed.add(id);
+      
       const meta=index[id];const cp=cacheById.get(id);const sync=await metaGet(`${uid0}|snap|${id}`).catch(()=>null);
       const remoteProjectTs=Number(meta.updatedAt||0),remoteWorkflowTs=Number(meta.workflowUpdatedAt||meta.updatedAt||0);
       const cachedProjectTs=Number(sync?.remoteUpdatedAt||0),cachedWorkflowTs=Number(sync?.remoteWorkflowUpdatedAt||sync?.remoteUpdatedAt||0);
