@@ -196,15 +196,15 @@
                   },
                   ".validate": "newData.numChildren() <= 20"
                 },
-                "$other": {
-                  ".validate": false
-                },
                 ".write": "auth != null && (auth.uid === 'fuod3DamBMayj4hPsIJurRwM2B92' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner'))",
                 "dimension": {
                   ".validate": "newData.isString() && newData.val().length <= 120"
                 },
                 "material": {
                   ".validate": "newData.isString() && newData.val().length <= 240"
+                },
+                "$other": {
+                  ".validate": false
                 },
                 "updatedBy": {
                   ".validate": "newData.isString() && newData.val().length <= 128 && (auth.uid === 'fuod3DamBMayj4hPsIJurRwM2B92' || root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() !== 'employee' || newData.val() === auth.uid)",
@@ -229,9 +229,6 @@
             "updatedAt": {
               ".validate": "newData.isNumber()"
             },
-            "$other": {
-              ".validate": false
-            },
             "stages": {
               ".validate": "newData.numChildren() <= 40",
               "$stageId": {
@@ -246,6 +243,9 @@
                   ".validate": false
                 }
               }
+            },
+            "$other": {
+              ".validate": false
             }
           }
         },
@@ -415,15 +415,15 @@
             ".read": "auth != null && (auth.uid === 'fuod3DamBMayj4hPsIJurRwM2B92' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner'))",
             ".write": "auth != null && !data.exists() && newData.child('actorUid').val() === auth.uid && (auth.uid === 'fuod3DamBMayj4hPsIJurRwM2B92' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && (root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner' || root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'employee')))",
             ".validate": "newData.hasChildren(['actorUid', 'action', 'entityType', 'at']) && newData.child('actorUid').isString() && newData.child('action').isString() && newData.child('action').val().length <= 100 && newData.child('entityType').isString() && newData.child('entityType').val().length <= 100 && newData.child('at').isNumber()",
-            "$other": {
-              ".validate": false
-            },
             "actorUid": {
               ".validate": "newData.isString() && newData.val().length <= 128"
             },
             "action": {
               ".validate": "newData.isString() && newData.val().length <= 100"
             },
+            "$other": {
+              ".validate": false
+            }
             "entityType": {
               ".validate": "newData.isString() && newData.val().length <= 100"
             },
