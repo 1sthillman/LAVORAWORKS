@@ -1,0 +1,47 @@
+name: Deploy Firebase HTML to GitHub Pages
+
+on:
+  push:
+    branches: [ firebase ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare deployment folder
+        run: |
+          mkdir -p _site
+          cp lavora-calisma-masasi-v38-firebase.html _site/index.html
+          if [ -f "01-CUBE-BK VOGER 13+3 ODA.xls" ]; then
+            cp "01-CUBE-BK VOGER 13+3 ODA.xls" _site/
+          fi
+          echo "✅ Firebase HTML v38 prepared for deployment"
+          ls -lah _site/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
