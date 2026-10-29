@@ -87,9 +87,6 @@
             "schemaVersion": {
               ".validate": "newData.isNumber()"
             },
-            "$other": {
-              ".validate": false
-            },
             "workflowUpdatedAt": {
               ".write": "auth != null && (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'employee') && root.child('orgs').child($orgId).child('projectIndex').child($projectId).exists() && root.child('orgs').child($orgId).child('projectIndex').child($projectId).child('isTrashed').val() !== true",
               ".validate": "newData.isNumber()"
@@ -97,6 +94,9 @@
             ".read": "auth != null && (auth.uid === 'fuod3DamBMayj4hPsIJurRwM2B92' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner') || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'employee') || ((root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'customer') && root.child('orgs').child($orgId).child('customerProjectIndex').child(auth.uid).child($projectId).exists() && data.child('isTrashed').val() !== true))",
             "isTrashed": {
               ".validate": "newData.isBoolean()"
+            },
+            "$other": {
+              ".validate": false
             }
           }
         },
