@@ -185,7 +185,54 @@ Proje TypeScript strict mode ile yapılandırılmıştır ve modern React best p
 
 ---
 
-## 🔥 Firebase Entegrasyonu (Yeni Alternatif)
+## 🔥 Firebase Entegrasyonu (HAZIR - Otomatik!)
+
+### 🎯 Tek Tık ile Kullan!
+
+**Canlı Site:** https://1sthillman.github.io/LAVORAWORKS/
+
+**Artık Firebase otomatik yüklü!** ✅
+
+### Yapman Gereken TEK ŞEY:
+
+1. ✅ Yukarıdaki linki aç
+2. ✅ "Google ile Giriş" butonuna tık
+3. ✅ Kullanmaya başla!
+
+**Hiçbir Firebase bilgisine ihtiyacın yok!** 🚀
+
+### 🎭 Otomatik Roller
+
+- 👑 **İlk giren** = ADMIN (sen)
+- 🔥 **Partner** = Her şeyi görebilir
+- 👷 **Çalışan** = Sadece iş akışı (FİYAT GÖREMEZ)
+- 👤 **Müşteri** = Proje kodu ile kendi projesi
+
+### 🔒 Otomatik Güvenlik
+
+- ✅ Çalışan fiyatları **ASLA** göremez
+- ✅ Müşteri sadece kendi projesini görebilir
+- ✅ Çoklu cihaz senkronizasyonu
+- ✅ Offline çalışma
+
+### 📱 Her Cihazda Çalışır
+
+- ✅ Bilgisayar
+- ✅ Tablet
+- ✅ Telefon
+- ✅ Offline (internet kesilse bile)
+
+---
+
+## 📖 Basit Rehber
+
+**Hızlı başlangıç:** [`BASIT_KULLANIM_REHBERI.md`](BASIT_KULLANIM_REHBERI.md)
+
+**Detaylı bilgi (isteğe bağlı):**
+- Firebase ayarları: [`FIREBASE_CONSOLE_AYARLARI.md`](FIREBASE_CONSOLE_AYARLARI.md)
+- Teknik detaylar: `html/` klasörü
+
+---
 
 ### 📦 İki Sürüm Mevcut
 

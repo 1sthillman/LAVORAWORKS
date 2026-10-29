@@ -179,7 +179,44 @@ img{-webkit-user-drag:none;-webkit-touch-callout:none}
 @media(max-width:380px){.st.h4 div:not(.hv){padding:11px}.st.h4 b{font-size:17px}.fch button{padding:7px 11px}}
 }
 </style><script id="lv-cloud-config-prelude">
-(function(){try{const c=JSON.parse(localStorage.getItem('lavora.cloud.config.v1')||'null');window.__LAVORA_CLOUD_CONFIG__=c;window.__LAVORA_CLOUD_MODE__=!!(c&&c.firebase&&c.firebase.apiKey&&c.firebase.authDomain&&c.firebase.databaseURL&&c.firebase.projectId&&c.firebase.appId&&c.orgId)}catch(e){window.__LAVORA_CLOUD_CONFIG__=null;window.__LAVORA_CLOUD_MODE__=false}})();
+(function(){
+  // 🔥 Firebase Config - Otomatik Yüklendi!
+  const firebaseConfig = {
+    firebase: {
+      apiKey: "AIzaSyAO7UomC_1wv-1lMEuDD6Z5lvzy3coZH_M",
+      authDomain: "lavoradesign-49ae4.firebaseapp.com",
+      databaseURL: "https://lavoradesign-49ae4-default-rtdb.firebaseio.com",
+      projectId: "lavoradesign-49ae4",
+      storageBucket: "lavoradesign-49ae4.firebasestorage.app",
+      messagingSenderId: "78076586593",
+      appId: "1:78076586593:web:24e0cc4219d73d25471820",
+      measurementId: "G-Z9LH4NPWRD"
+    },
+    orgId: "lavora-main",
+    adminUid: ""  // İlk girişten sonra otomatik güncellenecek
+  };
+  
+  // LocalStorage'dan eski config varsa kullan, yoksa yukarıdaki default'u kullan
+  try{
+    const stored=JSON.parse(localStorage.getItem('lavora.cloud.config.v1')||'null');
+    window.__LAVORA_CLOUD_CONFIG__=stored||firebaseConfig;
+    
+    // İlk kez açılıyorsa ve localStorage boşsa, default config'i kaydet
+    if(!stored){
+      localStorage.setItem('lavora.cloud.config.v1',JSON.stringify(firebaseConfig));
+      console.log('✅ Firebase config otomatik yüklendi!');
+    }
+    
+    const c=window.__LAVORA_CLOUD_CONFIG__;
+    window.__LAVORA_CLOUD_MODE__=!!(c&&c.firebase&&c.firebase.apiKey&&c.firebase.authDomain&&c.firebase.databaseURL&&c.firebase.projectId&&c.firebase.appId&&c.orgId);
+  }catch(e){
+    // Hata olursa default config kullan
+    window.__LAVORA_CLOUD_CONFIG__=firebaseConfig;
+    window.__LAVORA_CLOUD_MODE__=true;
+    localStorage.setItem('lavora.cloud.config.v1',JSON.stringify(firebaseConfig));
+    console.log('✅ Firebase config otomatik yüklendi (hata sonrası)');
+  }
+})();
 </script>
 </head><body>
 <header><img class="lg" id="lg" alt="Lavora Design"><div class="ht"><h1 id="t">Çalışma Masası</h1><small id="sb">Lavora Design</small></div><button class="hb" id="qk" data-a="qk" aria-label="Hızlı işlem ve arama (Ctrl/⌘ + K)" title="Hızlı işlem ve arama (Ctrl/⌘ + K)"><svg class="i" viewBox="0 0 24 24"><path d="M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3"/></svg></button><button class="hb" id="tg" data-a="theme" aria-label="Aydınlık veya karanlık tema"></button><button class="hb" id="gs" data-a="set" aria-label="Ayarlar"></button></header>
