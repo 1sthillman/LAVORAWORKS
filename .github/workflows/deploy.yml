@@ -27,11 +27,11 @@ jobs:
       - name: Prepare deployment folder
         run: |
           mkdir -p _site
-          cp lavora-calisma-masasi-v17.html _site/index.html
+          cp lavora-calisma-masasi-v38.html _site/index.html
           if [ -f "01-CUBE-BK VOGER 13+3 ODA.xls" ]; then
             cp "01-CUBE-BK VOGER 13+3 ODA.xls" _site/
           fi
-          echo "✅ HTML prepared for deployment"
+          echo "✅ HTML v38 prepared for deployment"
           ls -lah _site/
 
       - name: Setup Pages
