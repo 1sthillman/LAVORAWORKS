@@ -2480,6 +2480,10 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     return {role:member.role,status:member.status,member};
   }
   async function verifyAndEnter(user) {
+    console.log(`%c🔑 SENIN FIREBASE UID'N: ${user.uid}`, 'background: #00ff00; color: #000; font-size: 20px; font-weight: bold; padding: 10px;');
+    console.log(`📧 Email: ${user.email}`);
+    console.log(`📋 Admin UID beklenen: ${state.cfg?.adminUid || 'YOK'}`);
+    console.log(`⚠️ UID'ler eşleşiyor mu? ${user.uid === state.cfg?.adminUid ? '✅ EVET' : '❌ HAYIR - BU YÜZDEN permission_denied ALIYORSUN!'}`);
     if(state.bootingUid===user.uid || state.bootedUid===user.uid)return;
     state.bootingUid=user.uid;state.user=user;state.lastError='';showLoading('Google hesabı ve rol doğrulanıyor…');
     try {
