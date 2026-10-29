@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Firebase UID Kontrol</title>
+  <style>
+    body { font-family: monospace; padding: 40px; max-width: 800px; margin: 0 auto; background: #1a1a1a; color: #00ff00; }
+    button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #00ff00; color: #1a1a1a; border: none; border-radius: 4px; font-weight: bold; }
+    button:hover { background: #00cc00; }
+    pre { background: #000; padding: 16px; border: 2px solid #00ff00; border-radius: 4px; overflow-x: auto; }
+    .big { font-size: 24px; font-weight: bold; color: #00ff00; }
+  </style>
+</head>
+<body>
+  <h1>🔍 BENİM UID'M NEDİR?</h1>
+  <button onclick="getMyUid()">Google ile Giriş Yap ve UID'mi Göster</button>
+  
+  <div id="output"></div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAO7UomC_1wv-1lMEuDD6Z5lvzy3coZH_M",
+      authDomain: "lavoradesign-49ae4.firebaseapp.com",
+      databaseURL: "https://lavoradesign-49ae4-default-rtdb.firebaseio.com",
+      projectId: "lavoradesign-49ae4",
+      storageBucket: "lavoradesign-49ae4.firebasestorage.app",
+      messagingSenderId: "646806444097",
+      appId: "1:646806444097:web:b56bc52b75cd5d67ea5a82"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    window.getMyUid = async function() {
+      const output = document.getElementById('output');
+      output.innerHTML = '<p>🔄 Google ile giriş yapılıyor...</p>';
+
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        output.innerHTML = `
+          <h2>✅ GİRİŞ BAŞARILI!</h2>
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p class="big">📋 SENIN UID'N:</p>
+          <pre class="big">${user.uid}</pre>
+          
+          <h3>🔧 ŞİMDİ NE YAPMALIYIM?</h3>
+          <ol>
+            <li>Yukarıdaki UID'yi KOPYALA (CTRL+C)</li>
+            <li>Firebase CLI'da şu komutu çalıştır:</li>
+          </ol>
+          <pre>firebase database:set /orgs/lavora-main/members/${user.uid} admin-member.json</pre>
+          
+          <h3>📝 Tam Kullanıcı Bilgileri:</h3>
+          <pre>${JSON.stringify(user, null, 2)}</pre>
+        `;
+        
+      } catch (error) {
+        output.innerHTML = `<p style="color: #ff0000;">❌ HATA: ${error.message}</p><pre>${JSON.stringify(error, null, 2)}</pre>`;
+      }
+    };
+  </script>
+</body>
+</html>
