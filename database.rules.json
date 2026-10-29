@@ -136,6 +136,20 @@
           "$projectId": {
             ".read": "auth != null && (auth.uid === 'd03bSvP9kOY5IiRg46RY875tV1j1' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && (root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner' || root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'employee'))) ",
             ".write": "auth != null && (auth.uid === 'd03bSvP9kOY5IiRg46RY875tV1j1' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner'))",
+            "stages": {
+              "$stageId": {
+                ".validate": "newData.hasChildren(['name', 'position']) && newData.child('name').isString() && newData.child('name').val().length <= 120 && newData.child('position').isNumber()",
+                "name": {
+                  ".validate": "newData.isString() && newData.val().length <= 120"
+                },
+                "position": {
+                  ".validate": "newData.isNumber()"
+                },
+                "$other": {
+                  ".validate": false
+                }
+              }
+            },
             "items": {
               "$itemId": {
                 ".validate": "newData.hasChildren(['name','status']) && newData.child('name').isString() && newData.child('name').val().length <= 240 && newData.child('status').isString() && newData.child('status').val().length <= 80",
@@ -177,6 +191,17 @@
                 },
                 "progress": {
                   ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+                },
+                "stageProgress": {
+                  "$stageId": {
+                    ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 3"
+                  }
+                },
+                "dimension": {
+                  ".validate": "newData.isString() && newData.val().length <= 120"
+                },
+                "material": {
+                  ".validate": "newData.isString() && newData.val().length <= 240"
                 },
                 "mediaIds": {
                   "$mediaId": {
