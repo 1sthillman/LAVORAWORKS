@@ -87,6 +87,12 @@
             "schemaVersion": {
               ".validate": "newData.isNumber()"
             },
+            "workflowUpdatedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "isTrashed": {
+              ".validate": "newData.isBoolean()"
+            },
             "$other": {
               ".validate": false
             }
