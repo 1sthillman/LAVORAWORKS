@@ -219,6 +219,9 @@
                   "$other": {
                     ".validate": false
                   }
+                },
+                "$other": {
+                  ".validate": false
                 }
               }
             },
@@ -435,6 +438,9 @@
             },
             "safeSummary": {
               ".validate": "newData.isString() && newData.val().length <= 1000"
+            },
+            "$other": {
+              ".validate": false
             }
           }
         },
