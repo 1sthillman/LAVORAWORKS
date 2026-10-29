@@ -96,7 +96,7 @@
           "$projectId": {
             ".read": "auth != null && (auth.uid === 'REPLACE_WITH_REAL_ADMIN_UID' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && (root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner' || root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'employee'))) ",
             ".write": "auth != null && (auth.uid === 'REPLACE_WITH_REAL_ADMIN_UID' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner'))",
-            ".validate": "newData.hasChildren(['id','name']) && newData.child('id').val() === $projectId && newData.child('name').isString() && newData.child('name').val().length <= 240 && newData.numChildren() <= 8",
+            ".validate": "newData.hasChildren(['id','name']) && newData.child('id').val() === $projectId && newData.child('name').isString() && newData.child('name').val().length <= 240",
             "id": {
               ".validate": "newData.isString() && newData.val() === $projectId"
             },
@@ -138,7 +138,7 @@
             ".write": "auth != null && (auth.uid === 'REPLACE_WITH_REAL_ADMIN_UID' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner'))",
             "items": {
               "$itemId": {
-                ".validate": "newData.hasChildren(['name','status']) && newData.child('name').isString() && newData.child('name').val().length <= 240 && newData.child('status').isString() && newData.child('status').val().length <= 80 && newData.numChildren() <= 12",
+                ".validate": "newData.hasChildren(['name','status']) && newData.child('name').isString() && newData.child('name').val().length <= 240 && newData.child('status').isString() && newData.child('status').val().length <= 80",
                 "name": {
                   ".validate": "newData.isString() && newData.val().length <= 240"
                 },
@@ -189,7 +189,6 @@
                 ".write": "auth != null && (auth.uid === 'REPLACE_WITH_REAL_ADMIN_UID' || ((root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner')) || ((root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'employee') && root.child('orgs').child($orgId).child('projectIndex').child($projectId).exists()))"
               }
             },
-            ".validate": "newData.numChildren() <= 3",
             "dueDate": {
               ".validate": "newData.isString() && newData.val().length <= 40"
             },
@@ -206,7 +205,7 @@
             ".read": "auth != null && (auth.uid === 'REPLACE_WITH_REAL_ADMIN_UID' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner') || (auth.uid === $uid && root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'customer'))",
             "$projectId": {
               ".write": "auth != null && (auth.uid === 'REPLACE_WITH_REAL_ADMIN_UID' || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner') || (auth.uid === $uid && root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'customer' && !data.exists() && newData.child('projectId').val() === $projectId && newData.child('inviteHash').isString() && root.child('orgs').child($orgId).child('projectInvites').child(newData.child('inviteHash').val()).child('usedBy').val() === auth.uid && root.child('orgs').child($orgId).child('projectInvites').child(newData.child('inviteHash').val()).child('projectId').val() === $projectId && root.child('orgs').child($orgId).child('projectInvites').child(newData.child('inviteHash').val()).child('expiresAt').val() > now && !root.child('orgs').child($orgId).child('projectInvites').child(newData.child('inviteHash').val()).child('revokedAt').exists() && root.child('orgs').child($orgId).child('projectIndex').child($projectId).exists()))",
-              ".validate": "newData.hasChildren(['projectId', 'inviteHash']) && newData.child('projectId').val() === $projectId && newData.child('projectId').isString() && newData.child('inviteHash').isString() && newData.child('inviteHash').val().length <= 128 && newData.numChildren() <= 3",
+              ".validate": "newData.hasChildren(['projectId', 'inviteHash']) && newData.child('projectId').val() === $projectId && newData.child('projectId').isString() && newData.child('inviteHash').isString() && newData.child('inviteHash').val().length <= 128",
               "projectId": {
                 ".validate": "newData.isString() && newData.val() === $projectId && newData.val().length <= 128"
               },
@@ -248,7 +247,7 @@
                   }
                 }
               },
-              ".validate": "newData.hasChildren(['title','customerStatus']) && newData.child('title').isString() && newData.child('title').val().length <= 240 && newData.child('customerStatus').isString() && newData.child('customerStatus').val().length <= 120 && newData.numChildren() <= 9",
+              ".validate": "newData.hasChildren(['title','customerStatus']) && newData.child('title').isString() && newData.child('title').val().length <= 240 && newData.child('customerStatus').isString() && newData.child('customerStatus').val().length <= 120",
               "title": {
                 ".validate": "newData.isString() && newData.val().length <= 240"
               },
@@ -767,7 +766,7 @@
           ],
           "$requestId": {
             ".write": "auth != null && newData.exists() && ((auth.uid === 'REPLACE_WITH_REAL_ADMIN_UID') || (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'partner') || (auth.uid === newData.child('uid').val() && (root.child('orgs').child($orgId).child('members').child(auth.uid).child('status').val() === 'active' && root.child('orgs').child($orgId).child('members').child(auth.uid).child('role').val() === 'customer') && !data.exists() && newData.child('requestId').val() === $requestId && newData.child('status').val() === 'submitted' && root.child('orgs').child($orgId).child('customerIntakes').child(auth.uid).child($requestId).exists() && root.child('orgs').child($orgId).child('customerIntakes').child(auth.uid).child($requestId).child('title').val() === newData.child('title').val() && root.child('orgs').child($orgId).child('customerIntakes').child(auth.uid).child($requestId).child('createdAt').val() === newData.child('createdAt').val()))",
-            ".validate": "newData.hasChildren(['requestId','uid','title','status','createdAt']) && newData.child('requestId').val() === $requestId && newData.child('requestId').isString() && newData.child('requestId').val().length <= 128 && newData.child('uid').isString() && newData.child('uid').val().length <= 128 && newData.child('title').isString() && newData.child('title').val().length <= 240 && (newData.child('status').val() === 'submitted' || newData.child('status').val() === 'reviewing' || newData.child('status').val() === 'accepted' || newData.child('status').val() === 'rejected') && newData.child('createdAt').isNumber() && newData.numChildren() <= 6",
+            ".validate": "newData.hasChildren(['requestId','uid','title','status','createdAt']) && newData.child('requestId').val() === $requestId && newData.child('requestId').isString() && newData.child('requestId').val().length <= 128 && newData.child('uid').isString() && newData.child('uid').val().length <= 128 && newData.child('title').isString() && newData.child('title').val().length <= 240 && (newData.child('status').val() === 'submitted' || newData.child('status').val() === 'reviewing' || newData.child('status').val() === 'accepted' || newData.child('status').val() === 'rejected') && newData.child('createdAt').isNumber()",
             "requestId": {
               ".validate": "newData.isString() && newData.val() === $requestId"
             },
