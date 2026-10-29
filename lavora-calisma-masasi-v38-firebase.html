@@ -2247,6 +2247,14 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     const uid0=uid();
     for(const p of (projects||[])) {
       if(!p||!p.id)continue;
+      
+      // CRITICAL FIX: ÖNCE IndexedDB'ye kaydet (offline backup)
+      try {
+        await tx('readwrite', s => s.put(clone(p)), 'p');
+      } catch(e) {
+        console.error('[Lavora] IndexedDB yazma hatası:', e);
+      }
+      
       const sid=`${uid0}|snap|${p.id}`;const rec=await metaGet(sid);const prevSnap=rec?.snapshot||null;
       const {snap,flags}=makeQueueProject(p,prevSnap,false);
       if(!flags.fin&&!flags.workflow&&!flags.public&&!flags.idx)continue;
