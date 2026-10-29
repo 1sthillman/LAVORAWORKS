@@ -190,6 +190,12 @@
               }
             },
             ".validate": "true",
+            "stages": {
+              ".validate": "newData.hasChildren()"
+            },
+            "items": {
+              ".validate": "newData.hasChildren()"
+            },
             "dueDate": {
               ".validate": "newData.isString() && newData.val().length <= 40"
             },
