@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Proje Temizleme - LAVORA</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; margin-top: 0; }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .info { background: #e3f2fd; border-left: 4px solid #2196F3; }
+        .success { background: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .warning { background: #fff3e0; border-left: 4px solid #ff9800; }
+        button {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #d32f2f; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #2196F3;
+        }
+        .btn-secondary:hover {
+            background: #1976D2;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .project-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .project-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        .count {
+            font-weight: bold;
+            color: #2196F3;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Firebase Proje Temizleme Aracı</h1>
+        
+        <div class="status info">
+            <strong>ℹ️ Bilgi:</strong> Bu araç Firebase Realtime Database'deki <strong>TÜM</strong> projeleri kalıcı olarak silecektir.<br>
+            Path: <code>/orgs/lavora-main/projects/</code> ve <code>/orgs/lavora-main/trash/</code>
+        </div>
+
+        <div id="authStatus" class="status warning">
+            <strong>⏳ Durum:</strong> Giriş bekleniyor...
+        </div>
+
+        <div id="userInfo" style="display:none;" class="status success">
+            <strong>✅ Giriş Yapıldı:</strong><br>
+            Email: <span id="userEmail"></span><br>
+            UID: <code id="userUid"></code>
+        </div>
+
+        <div id="projectStats" style="display:none;">
+            <h3>📊 Mevcut Durum</h3>
+            <p>Aktif Projeler: <span class="count" id="activeCount">0</span></p>
+            <p>Çöp Kutusundaki Projeler: <span class="count" id="trashCount">0</span></p>
+            <p><strong>TOPLAM: <span class="count" id="totalCount">0</span></strong></p>
+            
+            <div id="projectList" class="project-list"></div>
+        </div>
+
+        <div id="controls" style="display:none;">
+            <button id="btnList" class="btn-secondary">🔍 Projeleri Listele</button>
+            <button id="btnClear">🗑️ TÜM PROJELERİ SİL</button>
+            <button id="btnVerify" class="btn-secondary" style="display:none;">✓ Temizliği Doğrula</button>
+        </div>
+
+        <div id="log"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getDatabase, ref, get, remove, set } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvn9D8e7e8T-d4tLpVW4gJXRg5iZWKrR8",
+            authDomain: "lavoradesign-49ae4.firebaseapp.com",
+            databaseURL: "https://lavoradesign-49ae4-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "lavoradesign-49ae4",
+            storageBucket: "lavoradesign-49ae4.firebasestorage.app",
+            messagingSenderId: "824497970724",
+            appId: "1:824497970724:web:2ac74efde29a33f6ab78f4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const ORG_ID = 'lavora-main';
+
+        let currentUser = null;
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            document.getElementById('log').appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('authStatus').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('controls').style.display = 'block';
+                document.getElementById('projectStats').style.display = 'block';
+                document.getElementById('userEmail').textContent = user.email;
+                document.getElementById('userUid').textContent = user.uid;
+                log('✅ Giriş başarılı: ' + user.email, 'success');
+                listProjects();
+            } else {
+                // Auto login
+                const provider = new GoogleAuthProvider();
+                signInWithPopup(auth, provider).catch(err => {
+                    log('❌ Giriş hatası: ' + err.message, 'error');
+                });
+            }
+        });
+
+        async function listProjects() {
+            try {
+                log('🔍 Projeler listeleniyor...', 'info');
+                
+                const projectsRef = ref(db, `/orgs/${ORG_ID}/projects`);
+                const trashRef = ref(db, `/orgs/${ORG_ID}/trash`);
+                
+                const [projectsSnap, trashSnap] = await Promise.all([
+                    get(projectsRef),
+                    get(trashRef)
+                ]);
+
+                const projects = projectsSnap.exists() ? projectsSnap.val() : {};
+                const trash = trashSnap.exists() ? trashSnap.val() : {};
+
+                const activeCount = Object.keys(projects).length;
+                const trashCount = Object.keys(trash).length;
+                const totalCount = activeCount + trashCount;
+
+                document.getElementById('activeCount').textContent = activeCount;
+                document.getElementById('trashCount').textContent = trashCount;
+                document.getElementById('totalCount').textContent = totalCount;
+
+                const listDiv = document.getElementById('projectList');
+                listDiv.innerHTML = '';
+
+                if (activeCount > 0) {
+                    listDiv.innerHTML += '<strong>📁 Aktif Projeler:</strong><br>';
+                    Object.entries(projects).forEach(([id, proj]) => {
+                        const div = document.createElement('div');
+                        div.className = 'project-item';
+                        div.innerHTML = `<code>${id}</code>: ${proj.title || 'İsimsiz'}`;
+                        listDiv.appendChild(div);
+                    });
+                }
+
+                if (trashCount > 0) {
+                    listDiv.innerHTML += '<br><strong>🗑️ Çöp Kutusundaki Projeler:</strong><br>';
+                    Object.entries(trash).forEach(([id, proj]) => {
+                        const div = document.createElement('div');
+                        div.className = 'project-item';
+                        div.innerHTML = `<code>${id}</code>: ${proj.title || 'İsimsiz'} (silindi: ${new Date(proj.deletedAt).toLocaleString()})`;
+                        listDiv.appendChild(div);
+                    });
+                }
+
+                if (totalCount === 0) {
+                    listDiv.innerHTML = '<div class="status success">✅ Hiç proje yok - veritabanı temiz!</div>';
+                }
+
+                log(`📊 Toplam ${totalCount} proje bulundu (${activeCount} aktif, ${trashCount} çöp kutusunda)`, 'info');
+            } catch (error) {
+                log('❌ Liste hatası: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        async function clearAllProjects() {
+            if (!confirm('⚠️ DİKKAT!\n\nFirebase\'deki TÜM projeler kalıcı olarak silinecek!\n\nBu işlem GERİ ALINAMAZ!\n\nDevam etmek istediğinizden emin misiniz?')) {
+                return;
+            }
+
+            if (!confirm('Son kontrol: Gerçekten TÜM projeleri silmek istiyor musunuz?')) {
+                return;
+            }
+
+            const btnClear = document.getElementById('btnClear');
+            btnClear.disabled = true;
+            btnClear.textContent = '⏳ Siliniyor...';
+
+            try {
+                log('🗑️ Tüm projeler siliniyor...', 'warning');
+
+                const projectsRef = ref(db, `/orgs/${ORG_ID}/projects`);
+                const trashRef = ref(db, `/orgs/${ORG_ID}/trash`);
+
+                // Önce ne var görelim
+                const [projectsSnap, trashSnap] = await Promise.all([
+                    get(projectsRef),
+                    get(trashRef)
+                ]);
+
+                const projectCount = projectsSnap.exists() ? Object.keys(projectsSnap.val()).length : 0;
+                const trashCount = trashSnap.exists() ? Object.keys(trashSnap.val()).length : 0;
+
+                log(`📊 Silinecek: ${projectCount} aktif proje, ${trashCount} çöp kutusundaki proje`, 'info');
+
+                // Her ikisini de tamamen sil
+                await Promise.all([
+                    remove(projectsRef),
+                    remove(trashRef)
+                ]);
+
+                log('✅ Firebase Realtime Database tamamen temizlendi!', 'success');
+                log(`✓ ${projectCount} aktif proje silindi`, 'success');
+                log(`✓ ${trashCount} çöp kutusundaki proje silindi`, 'success');
+
+                // Doğrulama butonunu göster
+                document.getElementById('btnVerify').style.display = 'inline-block';
+
+                // Liste güncelle
+                setTimeout(listProjects, 1000);
+
+            } catch (error) {
+                log('❌ Silme hatası: ' + error.message, 'error');
+                console.error(error);
+            } finally {
+                btnClear.disabled = false;
+                btnClear.textContent = '🗑️ TÜM PROJELERİ SİL';
+            }
+        }
+
+        // Event listeners
+        document.getElementById('btnList').addEventListener('click', listProjects);
+        document.getElementById('btnClear').addEventListener('click', clearAllProjects);
+        document.getElementById('btnVerify').addEventListener('click', () => {
+            log('🔍 Temizlik doğrulanıyor...', 'info');
+            listProjects();
+        });
+
+        // Initial message
+        log('🚀 Uygulama başlatıldı. Google ile giriş yapılıyor...', 'info');
+    </script>
+</body>
+</html>
