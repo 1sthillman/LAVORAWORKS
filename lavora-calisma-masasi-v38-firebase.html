@@ -2931,6 +2931,8 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     catch(e) { if(!navigator.onLine) { await enterCachedOffline(); return; } throw e; }
     if(!window.firebase.apps.length)window.firebase.initializeApp(state.cfg.firebase);
     state.firebaseApp=window.firebase.app();state.auth=window.firebase.auth();state.db=window.firebase.database();
+    // Firebase Auth persistence ayarla (LOCAL = tarayıcı kapansa bile session kalır)
+    try { await state.auth.setPersistence(window.firebase.auth.Auth.Persistence.LOCAL); } catch(e) { console.warn('Persistence ayarlanamadı:', e); }
     state.connected=!!navigator.onLine;
     state.db.ref('.info/connected').on('value',snap=>{
       const online=!!snap.val();const changed=state.connected!==online;state.connected=online;updateCloudBadge();
