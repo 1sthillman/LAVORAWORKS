@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Çöp Kutusu Temizleme</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        h1 { color: #f44336; margin-top: 0; }
+        button {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover { background: #d32f2f; }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .info { color: #2196f3; }
+        .warning { color: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Firebase Çöp Kutusu Temizleme</h1>
+        
+        <p style="color: #ff9800;">
+            ⚠️ Bu araç <strong>/orgs/lavora-main/trash</strong> path'indeki TÜM projeleri kalıcı olarak silecek!
+        </p>
+
+        <button id="btnAuth">1️⃣ Google ile Giriş Yap</button>
+        <button id="btnList" disabled>2️⃣ Çöp Kutusunu Listele</button>
+        <button id="btnDelete" disabled>3️⃣ HEPSİNİ SİL</button>
+
+        <div id="log" class="log"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvn9D8e7e8T-d4tLpVW4gJXRg5iZWKrR8",
+            authDomain: "lavoradesign-49ae4.firebaseapp.com",
+            databaseURL: "https://lavoradesign-49ae4-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "lavoradesign-49ae4",
+            storageBucket: "lavoradesign-49ae4.firebasestorage.app",
+            messagingSenderId: "824497970724",
+            appId: "1:824497970724:web:2ac74efde29a33f6ab78f4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        const btnAuth = document.getElementById('btnAuth');
+        const btnList = document.getElementById('btnList');
+        const btnDelete = document.getElementById('btnDelete');
+        const logDiv = document.getElementById('log');
+
+        let trashData = null;
+
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `[${time}] ${message}`;
+            logDiv.appendChild(div);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                btnAuth.textContent = `✅ Giriş yapıldı: ${user.email}`;
+                btnAuth.disabled = true;
+                btnList.disabled = false;
+                log(`Giriş başarılı: ${user.email}`, 'success');
+            }
+        });
+
+        btnAuth.addEventListener('click', async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                log(`Giriş hatası: ${error.message}`, 'error');
+            }
+        });
+
+        btnList.addEventListener('click', async () => {
+            try {
+                log('Çöp kutusu listeleniyor...', 'info');
+                
+                const trashRef = ref(db, '/orgs/lavora-main/trash');
+                const snapshot = await get(trashRef);
+
+                if (!snapshot.exists()) {
+                    log('✅ Çöp kutusu zaten boş!', 'success');
+                    trashData = null;
+                    return;
+                }
+
+                trashData = snapshot.val();
+                const count = Object.keys(trashData).length;
+
+                log(`📊 Çöp kutusunda ${count} proje bulundu:`, 'warning');
+                
+                Object.entries(trashData).forEach(([id, project]) => {
+                    log(`  - ${project.name || 'İsimsiz'} (ID: ${id})`, 'info');
+                });
+
+                btnDelete.disabled = false;
+                log(`Silmek için "HEPSİNİ SİL" butonuna tıkla`, 'warning');
+
+            } catch (error) {
+                log(`Hata: ${error.message}`, 'error');
+                console.error(error);
+            }
+        });
+
+        btnDelete.addEventListener('click', async () => {
+            if (!trashData) {
+                log('Önce listeyi yükle!', 'warning');
+                return;
+            }
+
+            const count = Object.keys(trashData).length;
+
+            if (!confirm(`⚠️ DİKKAT!\n\n${count} projeyi kalıcı olarak sileceksin!\n\nBu işlem GERİ ALINAMAZ!\n\nDevam etmek istediğinden emin misin?`)) {
+                return;
+            }
+
+            btnDelete.disabled = true;
+            btnDelete.textContent = '⏳ Siliniyor...';
+
+            try {
+                log(`🗑️ ${count} proje siliniyor...`, 'warning');
+
+                const trashRef = ref(db, '/orgs/lavora-main/trash');
+                await remove(trashRef);
+
+                log('✅ Çöp kutusu tamamen temizlendi!', 'success');
+                log(`✓ ${count} proje kalıcı olarak silindi`, 'success');
+
+                // Doğrula
+                const verifySnap = await get(trashRef);
+                if (!verifySnap.exists()) {
+                    log('✓ Doğrulama: Çöp kutusu boş', 'success');
+                } else {
+                    log('⚠️ Bazı veriler kalmış olabilir', 'warning');
+                }
+
+                trashData = null;
+                btnDelete.textContent = '✅ Tamamlandı';
+
+                log('🎉 İŞLEM BAŞARILI! Şimdi uygulamayı yenile (F5)', 'success');
+
+            } catch (error) {
+                log(`❌ Silme hatası: ${error.message}`, 'error');
+                console.error(error);
+                btnDelete.disabled = false;
+                btnDelete.textContent = '3️⃣ HEPSİNİ SİL';
+            }
+        });
+
+        log('🚀 Hazır. "Google ile Giriş Yap" butonuna tıkla.', 'info');
+    </script>
+</body>
+</html>
