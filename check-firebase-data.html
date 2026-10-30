@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Veri Kontrol - LAVORA</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { color: #4ec9b0; }
+        h2 { color: #569cd6; margin-top: 30px; }
+        pre {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border-left: 3px solid #4ec9b0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .info { background: #264f78; }
+        .success { background: #0e4e0e; }
+        .error { background: #5a1d1d; }
+        .warning { background: #5a4e1d; }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover { background: #1177bb; }
+        .count {
+            display: inline-block;
+            background: #0e639c;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .path {
+            color: #ce9178;
+            font-weight: bold;
+        }
+        .json-tree {
+            margin-left: 20px;
+        }
+        .json-key {
+            color: #9cdcfe;
+        }
+        .json-value {
+            color: #ce9178;
+        }
+        .console-link {
+            color: #569cd6;
+            text-decoration: none;
+        }
+        .console-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Firebase Realtime Database - Veri Haritası</h1>
+        
+        <div class="status info">
+            <strong>Database URL:</strong> <span class="path">https://lavoradesign-49ae4-default-rtdb.europe-west1.firebasedatabase.app</span>
+        </div>
+
+        <div id="authStatus" class="status warning">⏳ Giriş yapılıyor...</div>
+
+        <button id="btnScan">🔍 Tüm Veritabanını Tara</button>
+        <button id="btnProjects">📁 Sadece Projeleri Göster</button>
+        <button id="btnClear" style="background: #a1260d;">🗑️ TÜM VERİYİ SİL</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+        import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvn9D8e7e8T-d4tLpVW4gJXRg5iZWKrR8",
+            authDomain: "lavoradesign-49ae4.firebaseapp.com",
+            databaseURL: "https://lavoradesign-49ae4-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "lavoradesign-49ae4",
+            storageBucket: "lavoradesign-49ae4.firebasestorage.app",
+            messagingSenderId: "824497970724",
+            appId: "1:824497970724:web:2ac74efde29a33f6ab78f4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                const div = document.getElementById('authStatus');
+                div.className = 'status success';
+                div.innerHTML = `✅ Giriş: <strong>${user.email}</strong> (UID: <code>${user.uid}</code>)`;
+            } else {
+                const provider = new GoogleAuthProvider();
+                signInWithPopup(auth, provider).catch(err => {
+                    const div = document.getElementById('authStatus');
+                    div.className = 'status error';
+                    div.textContent = '❌ Giriş hatası: ' + err.message;
+                });
+            }
+        });
+
+        function log(html) {
+            document.getElementById('results').innerHTML += html;
+        }
+
+        function clearLog() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function renderJSON(obj, path = '', depth = 0) {
+            let html = '';
+            const indent = '  '.repeat(depth);
+            
+            if (obj === null || obj === undefined) {
+                return `<span class="json-value">null</span>`;
+            }
+            
+            if (typeof obj !== 'object') {
+                return `<span class="json-value">${JSON.stringify(obj)}</span>`;
+            }
+            
+            const keys = Object.keys(obj);
+            html += '{\n';
+            
+            keys.forEach((key, i) => {
+                const fullPath = path ? `${path}/${key}` : key;
+                const consoleUrl = `https://console.firebase.google.com/project/lavoradesign-49ae4/database/lavoradesign-49ae4-default-rtdb/data/${fullPath}`;
+                
+                html += indent + '  <span class="json-key">"' + key + '"</span>: ';
+                
+                if (typeof obj[key] === 'object' && obj[key] !== null) {
+                    const subKeys = Object.keys(obj[key]);
+                    if (subKeys.length > 5 && depth > 1) {
+                        html += `<span class="json-value">{...${subKeys.length} items}</span> `;
+                        html += `<a class="console-link" href="${consoleUrl}" target="_blank">🔗 Aç</a>`;
+                    } else {
+                        html += renderJSON(obj[key], fullPath, depth + 1);
+                    }
+                } else {
+                    html += `<span class="json-value">${JSON.stringify(obj[key])}</span>`;
+                }
+                
+                html += (i < keys.length - 1 ? ',\n' : '\n');
+            });
+            
+            html += indent + '}';
+            return html;
+        }
+
+        async function scanDatabase() {
+            if (!currentUser) {
+                alert('Önce giriş yapmalısınız!');
+                return;
+            }
+
+            clearLog();
+            log('<h2>🔍 Veritabanı Tam Tarama</h2>');
+            log('<div class="status info">Taranıyor...</div>');
+
+            try {
+                // Root seviyesini tara
+                const rootRef = ref(db, '/');
+                const snapshot = await get(rootRef);
+
+                if (!snapshot.exists()) {
+                    log('<div class="status warning">⚠️ Veritabanı tamamen boş!</div>');
+                    return;
+                }
+
+                const data = snapshot.val();
+                const keys = Object.keys(data);
+
+                log(`<div class="status success">✅ Root seviyesinde ${keys.length} ana node bulundu</div>`);
+
+                // Her ana node için detay
+                for (const key of keys) {
+                    const nodeRef = ref(db, `/${key}`);
+                    const nodeSnap = await get(nodeRef);
+                    const nodeData = nodeSnap.val();
+                    
+                    const consoleUrl = `https://console.firebase.google.com/project/lavoradesign-49ae4/database/lavoradesign-49ae4-default-rtdb/data/${key}`;
+                    
+                    log(`<h2>📂 /${key} <span class="count">${typeof nodeData === 'object' ? Object.keys(nodeData).length + ' items' : typeof nodeData}</span></h2>`);
+                    log(`<a class="console-link" href="${consoleUrl}" target="_blank">🔗 Firebase Console'da Aç</a>`);
+                    log(`<pre>${renderJSON(nodeData, key, 0)}</pre>`);
+                }
+
+                // Özel proje kontrolü
+                log('<h2>🎯 Proje Verisi Detaylı Kontrol</h2>');
+                
+                const projectPaths = [
+                    '/orgs/lavora-main/projects',
+                    '/orgs/lavora-main/trash',
+                    '/projects',
+                    '/trash'
+                ];
+
+                for (const path of projectPaths) {
+                    const pathRef = ref(db, path);
+                    const pathSnap = await get(pathRef);
+                    
+                    if (pathSnap.exists()) {
+                        const data = pathSnap.val();
+                        const count = Object.keys(data).length;
+                        log(`<div class="status success">✅ <span class="path">${path}</span>: ${count} proje bulundu</div>`);
+                        log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                    } else {
+                        log(`<div class="status info">ℹ️ <span class="path">${path}</span>: Boş</div>`);
+                    }
+                }
+
+            } catch (error) {
+                log(`<div class="status error">❌ Hata: ${error.message}</div>`);
+                console.error(error);
+            }
+        }
+
+        async function showProjects() {
+            if (!currentUser) {
+                alert('Önce giriş yapmalısınız!');
+                return;
+            }
+
+            clearLog();
+            log('<h2>📁 Proje Verileri</h2>');
+
+            try {
+                const paths = [
+                    { path: '/orgs/lavora-main/projects', name: 'Aktif Projeler' },
+                    { path: '/orgs/lavora-main/trash', name: 'Çöp Kutusu' }
+                ];
+
+                for (const { path, name } of paths) {
+                    const pathRef = ref(db, path);
+                    const snap = await get(pathRef);
+                    
+                    const consoleUrl = `https://console.firebase.google.com/project/lavoradesign-49ae4/database/lavoradesign-49ae4-default-rtdb/data${path.replace(/\//g, '~2F')}`;
+                    
+                    if (snap.exists()) {
+                        const data = snap.val();
+                        const count = Object.keys(data).length;
+                        log(`<h2>📂 ${name} <span class="count">${count} proje</span></h2>`);
+                        log(`<div class="status info">Path: <span class="path">${path}</span></div>`);
+                        log(`<a class="console-link" href="${consoleUrl}" target="_blank">🔗 Firebase Console'da Aç</a>`);
+                        
+                        Object.entries(data).forEach(([id, proj]) => {
+                            log(`<div class="status success">
+                                <strong>ID:</strong> <code>${id}</code><br>
+                                <strong>Başlık:</strong> ${proj.title || 'İsimsiz'}<br>
+                                <strong>Oluşturulma:</strong> ${proj.createdAt ? new Date(proj.createdAt).toLocaleString() : 'Bilinmiyor'}
+                                ${proj.deletedAt ? '<br><strong>Silinme:</strong> ' + new Date(proj.deletedAt).toLocaleString() : ''}
+                            </div>`);
+                        });
+                        
+                        log(`<pre>${JSON.stringify(data, null, 2)}</pre>`);
+                    } else {
+                        log(`<h2>📂 ${name}</h2>`);
+                        log(`<div class="status warning">⚠️ Boş - hiç proje yok</div>`);
+                        log(`<a class="console-link" href="${consoleUrl}" target="_blank">🔗 Firebase Console'da Aç</a>`);
+                    }
+                }
+
+            } catch (error) {
+                log(`<div class="status error">❌ Hata: ${error.message}</div>`);
+                console.error(error);
+            }
+        }
+
+        async function clearAll() {
+            if (!currentUser) {
+                alert('Önce giriş yapmalısınız!');
+                return;
+            }
+
+            if (!confirm('⚠️ DİKKAT!\n\nVeritabanındaki TÜM VERİYİ sileceksiniz!\n\nBu işlem GERİ ALINAMAZ!\n\nDevam etmek istediğinizden emin misiniz?')) {
+                return;
+            }
+
+            clearLog();
+            log('<h2>🗑️ TÜM VERİ SİLİNİYOR...</h2>');
+
+            try {
+                // Önce ne var görelim
+                const rootRef = ref(db, '/');
+                const snapshot = await get(rootRef);
+
+                if (!snapshot.exists()) {
+                    log('<div class="status info">ℹ️ Veritabanı zaten boş</div>');
+                    return;
+                }
+
+                const data = snapshot.val();
+                const keys = Object.keys(data);
+                log(`<div class="status warning">⚠️ Silinecek ${keys.length} ana node: ${keys.join(', ')}</div>`);
+
+                // Her bir node'u sil
+                for (const key of keys) {
+                    log(`<div class="status info">🗑️ /${key} siliniyor...</div>`);
+                    await remove(ref(db, `/${key}`));
+                    log(`<div class="status success">✅ /${key} silindi</div>`);
+                }
+
+                log('<div class="status success"><strong>✅ TÜM VERİ SİLİNDİ!</strong></div>');
+                
+                // Doğrulama
+                setTimeout(async () => {
+                    const verifySnap = await get(rootRef);
+                    if (!verifySnap.exists()) {
+                        log('<div class="status success">✓ Doğrulama: Veritabanı tamamen temiz</div>');
+                    } else {
+                        log('<div class="status error">⚠️ Uyarı: Bazı veriler hala mevcut olabilir</div>');
+                    }
+                }, 1000);
+
+            } catch (error) {
+                log(`<div class="status error">❌ Hata: ${error.message}</div>`);
+                console.error(error);
+            }
+        }
+
+        document.getElementById('btnScan').addEventListener('click', scanDatabase);
+        document.getElementById('btnProjects').addEventListener('click', showProjects);
+        document.getElementById('btnClear').addEventListener('click', clearAll);
+    </script>
+</body>
+</html>
