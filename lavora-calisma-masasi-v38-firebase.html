@@ -2201,7 +2201,7 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
     const stages=Object.entries(asObj(state.currentStages)).map(([sid,s])=>({id:sid,n:s.name||s.n||sid}));
     const stageMap=asObj(x.stageProgress||{}), stageList=stages.length?stages:Object.entries(asObj(x.__stages||{})).map(([sid,s])=>({id:sid,n:s.name||sid}));
     const st={};stageList.forEach((s,i)=>{st[s.id]=normalizeStageValue(stageMap[s.id] ?? (x.status==='done'?2:x.status==='in_progress'?(i===0?1:0):x.status==='blocked'?(i===0?3:0):0));});
-    return {id:String(id),n:String(x.name||'Adsız iş kalemi'),q:String(x.quantity??''),dim:String(x.dimension||''),mat:String(x.material||''),due:String(x.dueDate||''),note:String(x.note||''),ds:String(x.description||''),st,ph:Array.isArray(x.mediaIds)?x.mediaIds.map(String):Object.values(asObj(x.mediaIds)).map(String),...clone(fin||{})};
+    return {id:String(id),n:String(x.name||'Adsız iş kalemi'),q:String(x.quantity??''),dim:String(x.dimension||''),mat:String(x.material||''),due:String(x.dueDate||''),note:String(x.note||''),ds:String(x.description||''),st,ph:Array.isArray(x.mediaIds)?x.mediaIds.map(String):Object.values(asObj(x.mediaIds)).map(String),...clone(finance||{})};
   }
   function reconstructProject(finRec, pub, flowRec, id) {
     const base=clone(finRec?.data||{}); const p={...base,id:String(base.id||id),u:Number(finRec?.updatedAt||pub?.updatedAt||now())};
