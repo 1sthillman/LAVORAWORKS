@@ -2943,14 +2943,18 @@ document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||!on
       if(!user){try{localStorage.removeItem(LAST_UID_KEY)}catch(_){} state.role=null;state.member=null;state.projects=[];state.projectIndex={};state.workflowRecords={};state.customerViews={};state.customerRequests=[];state.ledgerRecords=[];P=[];cur=null;LR=[];LD=null;led=false;document.documentElement.classList.add('lv-cloud-mode');document.body.classList.add('lv-cloud-restricted');window.LavoraLedgerBridge?.clear?.();showLogin();return;}
       verifyAndEnter(user).catch(e=>showBlocked(msgError(e)));
     });
+    // Redirect sonucunu yakala (Google login redirect'ten döndükten sonra)
+    state.auth.getRedirectResult().then(result=>{
+      if(result&&result.user){console.log('Redirect ile giriş başarılı:',result.user.uid);}
+    }).catch(e=>console.error('Redirect hatası:',e));
     document.body.classList.remove('lv-cloud-restricted');
   }
   async function signInGoogle() {
     if(!state.auth) await startCloudMode();
     if(!state.auth)throw new Error('Firebase kimlik doğrulaması başlatılamadı.');
     const provider=new window.firebase.auth.GoogleAuthProvider();provider.setCustomParameters({prompt:'select_account'});
-    try { await state.auth.signInWithPopup(provider); }
-    catch(e) { if(e?.code==='auth/popup-blocked'||e?.code==='auth/operation-not-supported-in-this-environment') await state.auth.signInWithRedirect(provider); else throw e; }
+    // POPUP YERINE REDIRECT KULLAN - COOP sorununu tamamen çözer
+    await state.auth.signInWithRedirect(provider);
   }
   async function signOut() { try{localStorage.removeItem(LAST_UID_KEY)}catch(_){} if(state.auth)await state.auth.signOut();state.user=null;state.role=null;state.member=null;state.bootedUid='';state.projects=[];state.projectIndex={};state.workflowRecords={};state.customerViews={};state.customerRequests=[];state.ledgerRecords=[];P=[];cur=null;LR=[];LD=null;led=false;document.documentElement.classList.add('lv-cloud-mode');document.body.classList.add('lv-cloud-restricted');window.LavoraLedgerBridge?.clear?.();showLogin(); }
   async function refreshWorkspace() {
