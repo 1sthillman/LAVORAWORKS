@@ -1,5 +1,23 @@
 # Lavora Design - Firebase HTML Projesi
 
+## 🚀 HIZLI BAŞLANGIÇ (TEK TIKLA DEPLOY)
+
+```powershell
+cd C:\lavoraworklow
+.\DEPLOY.ps1
+```
+
+**O kadar!** Script her şeyi otomatik yapar. Detaylar için: [BASIT_DEPLOY_REHBERI.md](BASIT_DEPLOY_REHBERI.md)
+
+**Deployment Sonrası Test Linkleri:**
+- Ana Sayfa: https://lavoradesign-49ae4.web.app/
+- UID Kontrol: https://lavoradesign-49ae4.web.app/get-my-uid.html
+- Çalışma Masası: https://lavoradesign-49ae4.web.app/lavora-calisma-masasi-v38-firebase.html
+
+---
+
+# Lavora Design - Firebase HTML Projesi
+
 HTML tabanlı Lavora çalışma masası uygulaması ile Firebase Realtime Database entegrasyonu.
 
 ## 📁 Proje Yapısı
