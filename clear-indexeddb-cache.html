@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB Cache Temizleme - LAVORA</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #d32f2f; margin-top: 0; }
+        h2 { color: #1976d2; margin-top: 30px; }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .info { background: #e3f2fd; border-left: 4px solid #2196F3; }
+        .success { background: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .warning { background: #fff3e0; border-left: 4px solid #ff9800; }
+        button {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #b71c1c; }
+        button.secondary {
+            background: #1976d2;
+        }
+        button.secondary:hover {
+            background: #0d47a1;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+            max-height: 400px;
+        }
+        .count {
+            font-weight: bold;
+            color: #d32f2f;
+            font-size: 24px;
+        }
+        .store-info {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 3px solid #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ IndexedDB Cache Temizleme Aracı</h1>
+        
+        <div class="status error">
+            <strong>⚠️ SORUN:</strong> Firebase'de proje yok ama çöp kutusunda 13 proje görünüyor!<br>
+            <strong>NEDEN:</strong> Projeler tarayıcının IndexedDB cache'inde kalmış.<br>
+            <strong>ÇÖZÜM:</strong> IndexedDB'yi tamamen temizle!
+        </div>
+
+        <div class="status info">
+            <strong>📊 İşlenecek Veritabanları:</strong>
+            <ul style="margin: 5px 0; padding-left: 20px;">
+                <li><code>lavora-workflow</code> veritabanı</li>
+                <li>Store'lar: <code>p</code>, <code>cloudCache</code>, <code>cloudMeta</code>, <code>cloudQueue</code></li>
+            </ul>
+        </div>
+
+        <button id="btnCheck" class="secondary">🔍 IndexedDB'yi Kontrol Et</button>
+        <button id="btnClear">🗑️ TÜM CACHE'İ TEMİZLE</button>
+        <button id="btnNuke" style="background: #b71c1c;">💣 KOMPLE SİL (veritabanını kaldır)</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const DB_NAME = 'lavora-workflow';
+        const STORES = ['p', 'cloudCache', 'cloudMeta', 'cloudQueue'];
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${message}`;
+            document.getElementById('results').appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearLog() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function checkIndexedDB() {
+            clearLog();
+            log('🔍 IndexedDB içeriği kontrol ediliyor...', 'info');
+
+            try {
+                const databases = await indexedDB.databases();
+                log(`📊 Toplam ${databases.length} veritabanı bulundu:`, 'info');
+                
+                databases.forEach(db => {
+                    log(`<div class="store-info">📁 <strong>${db.name}</strong> (version: ${db.version})</div>`, 'info');
+                });
+
+                // lavora-workflow veritabanını aç
+                const request = indexedDB.open(DB_NAME);
+                
+                request.onerror = () => {
+                    log(`❌ Veritabanı açılamadı: ${request.error}`, 'error');
+                };
+
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    log(`✅ <strong>${DB_NAME}</strong> veritabanı açıldı (version: ${db.version})`, 'success');
+                    
+                    const storeNames = Array.from(db.objectStoreNames);
+                    log(`📦 Store'lar: ${storeNames.join(', ')}`, 'info');
+
+                    // Her store'u kontrol et
+                    let totalItems = 0;
+                    let storesProcessed = 0;
+
+                    storeNames.forEach(storeName => {
+                        const tx = db.transaction(storeName, 'readonly');
+                        const store = tx.objectStore(storeName);
+                        const countReq = store.count();
+
+                        countReq.onsuccess = () => {
+                            const count = countReq.result;
+                            totalItems += count;
+                            
+                            if (count > 0) {
+                                log(`<div class="store-info">
+                                    📦 <strong>${storeName}</strong>: <span class="count">${count}</span> item
+                                </div>`, 'warning');
+
+                                // İlk 5 item'i göster
+                                const getAllReq = store.getAll(5);
+                                getAllReq.onsuccess = () => {
+                                    const items = getAllReq.result;
+                                    if (items.length > 0) {
+                                        log(`<pre>${JSON.stringify(items, null, 2)}</pre>`, 'info');
+                                    }
+                                };
+                            } else {
+                                log(`<div class="store-info">📦 <strong>${storeName}</strong>: Boş</div>`, 'info');
+                            }
+
+                            storesProcessed++;
+                            if (storesProcessed === storeNames.length) {
+                                log(`<strong>📊 TOPLAM: ${totalItems} item bulundu</strong>`, totalItems > 0 ? 'warning' : 'success');
+                            }
+                        };
+                    });
+
+                    db.close();
+                };
+
+            } catch (error) {
+                log(`❌ Hata: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        async function clearCache() {
+            if (!confirm('⚠️ DİKKAT!\n\nIndexedDB cache\'indeki TÜM veriler silinecek!\n\nDevam etmek istiyor musunuz?')) {
+                return;
+            }
+
+            clearLog();
+            log('🗑️ Cache temizleniyor...', 'warning');
+
+            try {
+                const request = indexedDB.open(DB_NAME);
+
+                request.onsuccess = (event) => {
+                    const db = event.target.result;
+                    const storeNames = Array.from(db.objectStoreNames);
+                    
+                    log(`🔄 ${storeNames.length} store temizlenecek...`, 'info');
+
+                    const tx = db.transaction(storeNames, 'readwrite');
+                    let storesCleared = 0;
+
+                    storeNames.forEach(storeName => {
+                        const store = tx.objectStore(storeName);
+                        const clearReq = store.clear();
+
+                        clearReq.onsuccess = () => {
+                            log(`✅ <strong>${storeName}</strong> store temizlendi`, 'success');
+                            storesCleared++;
+
+                            if (storesCleared === storeNames.length) {
+                                log('<strong>🎉 TÜM CACHE TEMİZLENDİ!</strong>', 'success');
+                                log('💡 Şimdi sayfayı yenileyin (F5) ve çöp kutusunu kontrol edin', 'info');
+                            }
+                        };
+
+                        clearReq.onerror = () => {
+                            log(`❌ ${storeName} temizlenemedi: ${clearReq.error}`, 'error');
+                        };
+                    });
+
+                    tx.oncomplete = () => {
+                        db.close();
+                        log('✓ İşlem tamamlandı', 'success');
+                    };
+
+                    tx.onerror = () => {
+                        log(`❌ Transaction hatası: ${tx.error}`, 'error');
+                        db.close();
+                    };
+                };
+
+                request.onerror = () => {
+                    log(`❌ Veritabanı açılamadı: ${request.error}`, 'error');
+                };
+
+            } catch (error) {
+                log(`❌ Hata: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        async function nukeDatabase() {
+            if (!confirm('💣 UYARI!\n\nTÜM VERITABANI KALDIRILACAK!\n\nBu işlem sonrası uygulama sıfırdan başlayacak.\n\nDevam etmek istediğinizden EMİN MİSİNİZ?')) {
+                return;
+            }
+
+            if (!confirm('Son kontrol: Veritabanını tamamen kaldırmak istediğinizden emin misiniz?')) {
+                return;
+            }
+
+            clearLog();
+            log('💣 Veritabanı tamamen kaldırılıyor...', 'error');
+
+            try {
+                const deleteReq = indexedDB.deleteDatabase(DB_NAME);
+
+                deleteReq.onsuccess = () => {
+                    log(`✅ <strong>${DB_NAME}</strong> veritabanı tamamen kaldırıldı!`, 'success');
+                    log('🎉 IndexedDB tamamen temizlendi!', 'success');
+                    log('💡 Şimdi uygulamayı açın - sıfırdan başlayacak', 'info');
+                };
+
+                deleteReq.onerror = () => {
+                    log(`❌ Silme hatası: ${deleteReq.error}`, 'error');
+                };
+
+                deleteReq.onblocked = () => {
+                    log('⚠️ Veritabanı kullanımda! Tüm LAVORA sekmelerini kapatın ve tekrar deneyin.', 'warning');
+                };
+
+            } catch (error) {
+                log(`❌ Hata: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        // Event listeners
+        document.getElementById('btnCheck').addEventListener('click', checkIndexedDB);
+        document.getElementById('btnClear').addEventListener('click', clearCache);
+        document.getElementById('btnNuke').addEventListener('click', nukeDatabase);
+
+        // Otomatik kontrol
+        log('🚀 Araç hazır. "Kontrol Et" butonuna tıklayın.', 'info');
+    </script>
+</body>
+</html>
